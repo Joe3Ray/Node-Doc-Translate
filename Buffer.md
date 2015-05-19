@@ -429,3 +429,249 @@ Buffer类是一个直接处理二进制数据的全局类型。有很多方式�
 ####buf.readFloatLE(offset[, noAssert])
 
 ####buf.readFloatBE(offset[, noAssert])
+* `offset` 数字
+*  `noAssert` 布尔值，可选，默认值：false
+*  返回：数字
+
+在指定偏移位置按照指定的endian格式读取一个有符号32位单精度浮点型数字。
+
+把`noAssert`设置为`true`可以跳过`offset`的有效性验证。这意味着`offset`的值可能超出buffer的范围。默认值是`false`。
+
+例子：
+
+	var buf = new Buffer(4);
+	
+	buf[0] = 0x00;
+	buf[1] = 0x00;
+	buf[2] = 0x80;
+	buf[3] = 0x3f;
+	
+	console.log(buf.readFloatLE(0));
+	
+	// 0x01
+	
+####buf.readDoubleLE(offset[, noAssert])
+
+####buf.readDoubleBE(offset[, noAssert])
+* `offset` 数字
+*  `noAssert` 布尔值，可选，默认值：false
+*  返回：数字
+
+在指定偏移位置按照指定的endian格式读取一个有符号64位双精度浮点型数字。
+
+把`noAssert`设置为`true`可以跳过`offset`的有效性验证。这意味着`offset`的值可能超出buffer的范围。默认值是`false`。
+
+例子：
+
+	var buf = new Buffer(8);
+	
+	buf[0] = 0x55;
+	buf[1] = 0x55;
+	buf[2] = 0x55;
+	buf[3] = 0x55;
+	buf[4] = 0x55;
+	buf[5] = 0x55;
+	buf[6] = 0xd5;
+	buf[7] = 0x3f;
+	
+	console.log(buf.readDoubleLE(0));
+	
+	// 0.3333333333333333
+	
+####buf.writeUInt8(value, offset[, noAssert])
+* `value` 数字
+* `offset` 数字
+* `noAssert` 布尔值，可选，默认值：false
+
+在指定偏移位置把`value`写进buffer。注意，`value`必须是合法的8位无符号整数。
+
+把`noAssert`设为true可以跳过`value`和`offset`的合法性检测。这意味着`value`对于指定的函数来说可能过大，还有`offset`可能超过buffer的范围导致的值被隐式地抛弃。除非你非常确定这个的正确定，否则不要使用。默认值是`false`。
+
+例子：
+
+	var buf = new Buffer(4);
+	buf.writeUInt8(0x3, 0);
+	buf.writeUInt8(0x4, 1);
+	buf.writeUInt8(0x23, 2);
+	buf.writeUInt8(0x42, 3);
+	
+	console.log(buf);
+	
+	// <Buffer 03 04 23 42>
+	
+####buf.writeUInt16LE(value, offset[, noAssert])
+
+####buf.writeUInt16BE(value, offset[, noAssert])
+* `value` 数字
+* `offset` 数字
+* `noAssert` 布尔值，可选，默认值：false
+
+在指定偏移位置用指定的endian格式把`value`写进buffer。注意，`value`必须是合法的16位无符号整数。
+
+把`noAssert`设为true可以跳过`value`和`offset`的合法性检测。这意味着`value`对于指定的函数来说可能过大，还有`offset`可能超过buffer的范围导致的值被隐式地抛弃。除非你非常确定这个的正确定，否则不要使用。默认值是`false`。
+
+例子：
+
+	var buf = new Buffer(4);
+	buf.writeUInt16BE(0xdead, 0);
+	buf.writeUInt16BE(0xbeef, 2);
+	
+	console.log(buf);
+	
+	buf.writeUInt16LE(0xdead, 0);
+	buf.writeUInt16LE(0xbeef, 2);
+	
+	console.log(buf);
+	
+	// <Buffer de ad be ef>
+	// <Buffer ad de ef be>
+	
+####buf.writeUInt32LE(value, offset[, noAssert])
+
+####buf.writeUInt32BE(value, offset[, noAssert])
+* `value` 数字
+* `offset` 数字
+* `noAssert` 布尔值，可选，默认值：false
+
+在指定偏移位置用指定的endian格式把`value`写进buffer。注意，`value`必须是合法的32位无符号整数。
+
+把`noAssert`设为true可以跳过`value`和`offset`的合法性检测。这意味着`value`对于指定的函数来说可能过大，还有`offset`可能超过buffer的范围导致的值被隐式地抛弃。除非你非常确定这个的正确定，否则不要使用。默认值是`false`。
+
+例子：
+
+	var buf = new Buffer(4);
+	buf.writeUInt32BE(0xfeedface, 0);
+	
+	console.log(buf);
+	
+	buf.writeUInt32LE(0xfeedface, 0);
+	
+	console.log(buf);
+	
+	// <Buffer fe ed fa ce>
+	// <Buffer ce fa ed fe>
+	
+####buf.writeInt8(value, offset[, noAssert])
+* `value` 数字
+* `offset` 数字
+* `noAssert` 布尔值，可选，默认值：false
+
+在指定偏移位置把`value`写进buffer。注意，`value`必须是合法的8位有符号整数。
+
+把`noAssert`设为true可以跳过`value`和`offset`的合法性检测。这意味着`value`对于指定的函数来说可能过大，还有`offset`可能超过buffer的范围导致的值被隐式地抛弃。除非你非常确定这个的正确定，否则不要使用。默认值是`false`。
+
+除了value被当做补符号整数写进`buffer`之外，和`buffer.writeUInt8`作用一样。
+
+####buf.writeInt16LE(value, offset[, noAssert])
+
+####buf.writeInt16BE(value, offset[, noAssert])
+* `value` 数字
+* `offset` 数字
+* `noAssert` 布尔值，可选，默认值：false
+
+在指定偏移位置把`value`写进buffer。注意，`value`必须是合法的16位有符号整数。
+
+把`noAssert`设为true可以跳过`value`和`offset`的合法性检测。这意味着`value`对于指定的函数来说可能过大，还有`offset`可能超过buffer的范围导致的值被隐式地抛弃。除非你非常确定这个的正确定，否则不要使用。默认值是`false`。
+
+除了value被当做补符号整数写进`buffer`之外，和`buffer.writeUInt16*`作用一样。
+
+####buf.writeInt32LE(value, offset[, noAssert])
+
+####buf.writeInt32BE(value, offset[, noAssert])
+* `value` 数字
+* `offset` 数字
+* `noAssert` 布尔值，可选，默认值：false
+
+在指定偏移位置把`value`写进buffer。注意，`value`必须是合法的32位有符号整数。
+
+把`noAssert`设为true可以跳过`value`和`offset`的合法性检测。这意味着`value`对于指定的函数来说可能过大，还有`offset`可能超过buffer的范围导致的值被隐式地抛弃。除非你非常确定这个的正确定，否则不要使用。默认值是`false`。
+
+除了value被当做补符号整数写进`buffer`之外，和`buffer.writeUInt32*`作用一样。
+
+####buf.writeFloatLE(value, offset[, noAssert])
+
+####buf.writeFloatBE(value, offset[, noAssert])
+* `value` 数字
+* `offset` 数字
+* `noAssert` 布尔值，可选，默认值：false
+
+在指定偏移位置把`value`写进buffer。注意，`value`如果不是32位单精度浮点型数字的话，表现将是不确定的。
+
+把`noAssert`设为true可以跳过`value`和`offset`的合法性检测。这意味着`value`对于指定的函数来说可能过大，还有`offset`可能超过buffer的范围导致的值被隐式地抛弃。除非你非常确定这个的正确定，否则不要使用。默认值是`false`。
+
+例子：
+
+	var buf = new Buffer(4);
+	buf.writeFloatBE(0xcafebabe, 0);
+	
+	console.log(buf);
+	
+	buf.writeFloatLE(0xcafebabe, 0);
+	
+	console.log(buf);
+	
+	// <Buffer 4f 4a fe bb>
+	// <Buffer bb fe 4a 4f>
+	
+####buf.writeDoubleLE(value, offset[, noAssert])
+
+####buf.writeDoubleBE(value, offset[, noAssert])
+* `value` 数字
+* `offset` 数字
+* `noAssert` 布尔值，可选，默认值：false
+
+在指定偏移位置把`value`写进buffer。注意，`value`必须是64位双精度浮点型数字。
+
+把`noAssert`设为true可以跳过`value`和`offset`的合法性检测。这意味着`value`对于指定的函数来说可能过大，还有`offset`可能超过buffer的范围导致的值被隐式地抛弃。除非你非常确定这个的正确定，否则不要使用。默认值是`false`。
+
+例子：
+
+	var buf = new Buffer(8);
+	buf.writeDoubleBE(0xdeadbeefcafebabe, 0);
+	
+	console.log(buf);
+	
+	buf.writeDoubleLE(0xdeadbeefcafebabe, 0);
+	
+	console.log(buf);
+	
+	// <Buffer 43 eb d5 b7 dd f9 5f d7>
+	// <Buffer d7 5f f9 dd b7 d5 eb 43>
+	
+####buf.fill(value[, offset][, end])
+* `value`
+* `offset` 数字，可选
+* `end` 数字，可选
+
+用指定的值填充buffer。如果没有给定`offset`(默认为`0`)和`end`(默认为`buffer.length`)，将会填充整个buffer。
+
+	var b = new Buffer(50);
+	b.fill("h");
+	
+###buffer.INSPECT_MAX_BYTES
+* 数字，默认值：50
+
+调用`buffer.inspect()`时返回的字节数。这个值可以被用户模块覆盖。
+
+注意这是通过`require('buffer')`返回的buffer模块的属性，不属于全局的Buffer，也不属于某个buffer实例。
+
+###类：SlowBuffer
+返回一个不被池管理的`Buffer`。
+
+为了避免大量创建独立分配的Buffer带来的垃圾回收开销，默认情况下小于4KB的空间都是截取自一个较大的独立对象。这个方法提升了性能和内存使用，因为V8不需要跟踪并清理很多`Persistent`对象。
+
+当开发者需要将池中一小块数据保留不确定的一段时间，较为妥当的办法是用 SlowBuffer 创建一个不被池管理的 Buffer 实例并将相应数据拷贝出来。
+
+	// need to keep around a few small chunks of memor
+	var store = [];
+	
+	socket.on('readable', function() {
+	    var data = socket.read();
+	    // allocate for retained data
+	    var sb = new SlowBuffer(10);
+	    // copy the data into the new allocation
+	    data.copy(sb, 0, 0, 10);
+	    store.push(sb);
+	});
+	
+请谨慎使用，仅作为开发者频繁观察到他们的应用中过度的内存保留时的最后手段。
