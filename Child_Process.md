@@ -184,3 +184,71 @@ ChildProcess类不能被直接使用。使用`spawn()`、`exec()`、`execFile()`
 `child.send()`的`sendHandle`选项是为了把一个TCP socket或者server对象发送给其他进程。子进程可以监听`message`事件，从第二个参数获取这个对象。
 
 发送不了消息的时候会触发`error`事件，例如子进程已经退出的情况。
+
+**示例：发送server对象#**
+
+下面是一个发送server的示例：
+
+	var child = require('child_process').fork('child.js');
+	
+	// Open up the server object and send the handle.
+	var server = require('net').createServer();
+	server.on('connection', function (socket) {
+	  socket.end('handled by parent');
+	});
+	server.listen(1337, function() {
+	  child.send('server', server);
+	});
+	
+子进程将这样处理server对象：
+
+	process.on('message', function(m, server) {
+	  if (m === 'server') {
+	    server.on('connection', function (socket) {
+	      socket.end('handled by child');
+	    });
+	  }
+	});
+	
+现在你需要注意server是父子进程共享的，这意味着有的连接是父进程处理，有的连接是子进程处理。
+
+对`dgram`服务器来说，工作流程是一样的。你监听的是`message`事件，而不是 `connection`事件， 使用`server.bind` ,而不是`server.listen`。(当前仅在UNIX平台支持。)
+
+**示例：发送socket对象**
+
+下面是一个发送socket对象的示例。他将创建两个子线程 ，同时处理连接，这是通过使用远程地址`74.125.127.100`作为 VIP 发送socket到一个‘特殊’的子线程， 其他的socket将会发送到‘正常’的线程里。
+
+	var normal = require('child_process').fork('child.js', ['normal']);
+	var special = require('child_process').fork('child.js', ['special']);
+	
+	// Open up the server and send sockets to child
+	var server = require('net').createServer();
+	server.on('connection', function (socket) {
+	
+	  // if this is a VIP
+	  if (socket.remoteAddress === '74.125.127.100') {
+	    special.send('socket', socket);
+	    return;
+	  }
+	  // just the usual dudes
+	  normal.send('socket', socket);
+	});
+	server.listen(1337);
+	
+`child.js`的脚本代码应该是这样的：
+
+	process.on('message', function(m, socket) {
+	  if (m === 'socket') {
+	    socket.end('You were handled as a ' + process.argv[2] + ' person');
+	  }
+	});
+	
+注意，一旦单个的socket被发送到子进程，当这个socket被删除之后，父进程将不再对它保存跟踪，这表明了这个条件下`.connetions`属性将变成'null'， 在这个条件下同时也不推荐使用`.maxConnections`属性。
+
+####child.disconnect()
+
+关闭父子进程之间的IPC通道，在没有其他连接让他保持活动状态的情况下，子进程将优雅地退出。调用这个函数后`.connected`属性在父子进程中都将被设置为`false`，之后就不能再发送消息。
+
+'disconnect'事件在进程接收不到任何消息时将被触发，很可能是立即触发。
+
+需要注意的是你同样可以在子进程中调用`process.disconnect()`，如果子进程和父进程之间有一个打开的IPC通道的话（比如`fork()`）。
