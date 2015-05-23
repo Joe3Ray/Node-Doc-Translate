@@ -110,3 +110,77 @@ ChildProcess类不能被直接使用。使用`spawn()`、`exec()`、`execFile()`
 	assert.equal(child.stdio[2], null);
 	assert.equal(child.stdio[2], child.stderr);
 	
+####child.pid
+* 数字
+
+子进程的PID。
+
+例子：
+
+	var spawn = require('child_process').spawn,
+	    grep = spawn('grep', ['ssh']);
+		
+    console.log('Spawned child pid: ' + grep.pid);
+	grep.stdin.end();
+	
+####child.connected
+* 布尔值 在调用'.disconnect'后被设置成false
+
+如果`.connected`是false，就不能再发送消息。
+
+####child.kill([signal])
+* `signal` 字符串
+
+向子进程发送一个信号。如果没有提供任何参数，将会发送`'SIGTERM'`。查看`signal(7)`可以看到所有用信号的列表。
+
+	var spawn = require('child_process').spawn,
+	    grep = spawn('grep', ['ssh']);
+		
+	grep.on('close', function (code, signal) {
+	    console.log('child process terminated due to receipt of signal '+signal);
+	});
+	
+	// send SIGHUP to process
+	grep.kill('SIGHUP');
+	
+当信号无法传递时可能会触发`'error'`事件。给一个已经退出的子进程发信号不会有错误但是可能会有没预料到的后果：如果PID(进程id)被分配给其他进程，信号将会发送给那个进程。接下来会发生什么就不好说了。
+
+注意虽然这个方法被叫做`kill`，但是传递给子进程的信号可能不会真的终止它。`kill`实际上只是给一个进程发送信号。
+
+参考`kill(2)`。
+
+####child.send(message[, sendHandle])
+* `message` 对象
+* `sendHandle` Handle对象
+
+当使用`child_process.fork()`时你可以通过`child.send(message[, sendHandle])`写入子进程，子进程通过监听`message`事件可以捕获这个消息。
+
+例如：
+
+	var cp = require('child_process');
+	
+	var n = cp.fork(__dirname + '/sub.js');
+	
+	n.on('message', function (m) {
+	    console.log('PARENT got message:', m);
+	});
+	
+	n.send({ hello: 'world' });
+	
+子进程的脚本`'sub.js'`可能是这样的：
+
+	process.on('message', function (m) {
+	    console.log('CHILD got message:', m);
+	});
+	
+	process.send({foo: 'bar'});
+	
+子进程中`process`对象有一个`send()`方法，`process`每次通过它的信道接收到信息都会触发事件，信息是一个对象。
+
+请注意，`send()`方法在父子进程中都是同步的 - 不建议发送大块的数据。（可以使用pipes来替代，查看`child_process.spawn`）。
+
+发送`{md: 'NODE_foo'}`有一个特殊的情况。所有在`cmd`属性中包含一个`NODE_`前缀的消息都不会触发`message`事件，因为他们是node核心使用的内部消息。包含这个前缀的消息会触发`internalMessage`事件，你应该尽量避免使用这个特性，它有可能随时更改但不通知你。
+
+`child.send()`的`sendHandle`选项是为了把一个TCP socket或者server对象发送给其他进程。子进程可以监听`message`事件，从第二个参数获取这个对象。
+
+发送不了消息的时候会触发`error`事件，例如子进程已经退出的情况。
