@@ -252,3 +252,139 @@ ChildProcess类不能被直接使用。使用`spawn()`、`exec()`、`execFile()`
 'disconnect'事件在进程接收不到任何消息时将被触发，很可能是立即触发。
 
 需要注意的是你同样可以在子进程中调用`process.disconnect()`，如果子进程和父进程之间有一个打开的IPC通道的话（比如`fork()`）。
+
+###异步创建进程
+
+这些方法遵循常见的异步编程模式（接受一个回调或者返回一个EventEmitter）。
+
+####child_process.spawn(command[, args][, options])
+* `command` 字符串 需要运行的命令
+* `args` 数组 参数字符串列表
+* `options` 对象
+ * `cwd` 字符串 子进程当前的工作目录
+ * `env` 对象 环境键值对
+ * `stdio` 数组|字符串 子进程的stdio配置。（见下面）
+ * `customFds` 数组 **废弃** 子进程为了stdio使用的文件描述符。（见下面）
+ * `detached` 布尔值 子进程将是一个进程组组长。（见下面）
+ * `uid` 数字 设置进程的用户身份
+ * `gid` 数字 设置进程的用户组身份
+* 返回：子进程对象
+
+根据给定的命令和和`args`中的命令行参数启动一个新的进程。若省略，`args`默认是一个空数组。
+
+第三个参数作用是指定额外选项，有这些默认值：
+
+	{ cwd: undefined,
+	  env: process.env
+	}
+	
+使用`cwd`来指定生成该进程的工作目录。如果没有给定，默认为当前进程的工作目录。
+
+使用`env`来指定新进程中的环境变量，默认为process.env。
+
+一个运行`ls -lh /usr`的例子，捕获`stdout`、`stderr`和退出代码：
+
+	var spawn = require('child_process').spawn,
+	    ls    = spawn('ls', ['-lh', '/usr']);
+	
+	ls.stdout.on('data', function (data) {
+	  console.log('stdout: ' + data);
+	});
+	
+	ls.stderr.on('data', function (data) {
+	  console.log('stderr: ' + data);
+	});
+	
+	ls.on('close', function (code) {
+	  console.log('child process exited with code ' + code);
+	});
+	
+例子：一个非常复杂的运行'ps ax | grep ssh'的方法
+
+	var spawn = require('child_process').spawn,
+	    ps    = spawn('ps', ['ax']),
+	    grep  = spawn('grep', ['ssh']);
+	
+	ps.stdout.on('data', function (data) {
+	  grep.stdin.write(data);
+	});
+	
+	ps.stderr.on('data', function (data) {
+	  console.log('ps stderr: ' + data);
+	});
+	
+	ps.on('close', function (code) {
+	  if (code !== 0) {
+	    console.log('ps process exited with code ' + code);
+	  }
+	  grep.stdin.end();
+	});
+	
+	grep.stdout.on('data', function (data) {
+	  console.log('' + data);
+	});
+	
+	grep.stderr.on('data', function (data) {
+	  console.log('grep stderr: ' + data);
+	});
+	
+	grep.on('close', function (code) {
+	  if (code !== 0) {
+	    console.log('grep process exited with code ' + code);
+	  }
+	});
+	
+####options.stdio
+
+作为一个简写，`stdio`参数可能是下列字符串中的一个：
+* `'pipe'` - `['pipe', 'pipe', 'pipe']`，这是默认值
+* `'ignore'` - `['ignore', 'ignore', 'ignore']`
+* `'inherit'` - `[process.stdin, process.stdout, process.stderr]`或者`[0, 1, 2]`
+
+否则，`child_process.spawn()`的stdio选项就是一个数组，每一个位置都代表了子进程的一个fd。可用值是下列几个之一：
+1. `'pipe'` - 在父子进程间建立一个管道。管道的父进程端作为`child_process`对象的一个属性暴露给父进程，比如`ChildProcess.stdio[fd]`。为fds 0到2 建立的管道也可以分别通过ChildProcess.stdin、ChildProcess.stdout和ChildProcess.stderr访问。
+2. `ipc` - 在父子进程间建立一个IPC频道用来发送消息或者文件标识符。一个子进程最多有一个IPC stdio文件标识符。设置了这个选项就可以使用ChildProcess.send()方法。如果子进程向这个文件标识符写入JSON消息，这将会触发ChildProcess.on('message')。如果子进程是一个Node.js程序，那么IPC通道的存在会激活process.send()和process.on('message')。
+3. `ignore` - 不要再子进程中设置这个文件标识符。需要注意Node总是会为它生成的进程打开fs 0到2。如果这其中任何一个被忽略了，node会打开`/dev/null`并将它附给子进程的fd。
+4. `Stream`对象 - 和子进程共享一个与tty，文件，socket或者一个管道有关的可读或可写流。该流底层的文件标识在子进程中会被复制给stdio数组索引对应的文件标识符。注意该流必须有一个底层标识符（在`'open'`事件出现之前文件流没有）。
+5. 正数 - 该整数值被解释为父进程中当前打开的一个文件标识符。它与子进程共享，和`Stream`被共享的方式相似。
+6. `null`，`undefined` - 使用默认值。对于stdio fd 0，1和2（也就是stdin, stdout, stderr），会创建一个管道，对于fd 3或者更高的，默认值是`'ignore'`。
+
+例子：
+
+	var spawn = require('child_process').spawn;
+	
+	// Child will use parent's stdios
+	spawn('prg', [], { stdio: 'inherit' });
+	
+	// Spawn child sharing only stderr
+	spawn('prg', [], { stdio: ['pipe', 'pipe', process.stderr] });
+	
+	// Open an extra fd=4, to interact with programs present a
+	// startd-style interface.
+	spawn('prg', [], { stdio: ['pipe', null, null, null, 'pipe'] });
+	
+####options.detached
+如果设置了`detached`选项，子进程将会成为一个新的进程组的组长。这样的话子进程可以在父进程退出后继续运行。
+
+默认情况下，父进程会等待脱离了的子进程退出。要阻止父进程等待给定的子进程，使用`child.unref()`方法，这样父进程的事件轮询在它的引用计数中讲不会包括子进程。
+
+解绑一个长时间运行的进程并将它的输出写入一个文件的例子：
+
+	var fs = require('fs'),
+	    spawn = require('child_process').spawn,
+	    out = fs.openSync('./out.log', 'a'),
+	    err = fs.openSync('./out.log', 'a');
+		
+	var child = spawn('prg', [], {
+	  detached: true,
+	  stdio: [ 'ignore', out, err ]
+	});
+	
+	child.unref();
+	
+当时用`detached`的选项来创建一个长时间的进程时，该进程不会在后台保持运行，除非向它提供一个不连接到父进程的stdio配置。如果继承了父进程的stdio，子进程将会继续附着在控制终端。
+
+####options.customFds
+这是一个已废弃的选项，叫做`customFds`，允许指定特殊的文件描述符作为子进程的stdio。这个API无法移植到所有平台，因此被去除。有了`customFds`就可以将新进程的`[stdin, stdout, stderr]`钩到现有的流上；-1表示创建新流。自己承担使用风险。
+
+####child_process.exec(command[, options], callback)
