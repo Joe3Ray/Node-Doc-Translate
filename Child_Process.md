@@ -388,3 +388,87 @@ ChildProcess类不能被直接使用。使用`spawn()`、`exec()`、`execFile()`
 这是一个已废弃的选项，叫做`customFds`，允许指定特殊的文件描述符作为子进程的stdio。这个API无法移植到所有平台，因此被去除。有了`customFds`就可以将新进程的`[stdin, stdout, stderr]`钩到现有的流上；-1表示创建新流。自己承担使用风险。
 
 ####child_process.exec(command[, options], callback)
+* `command` 字符串 需要运行的命令和用空格分开的参数
+* `options` 对象
+ * `cwd` 字符串 子进程当前的工作目录
+ * `env` 对象 环境键值对
+ * `encoding` 字符串（默认：'utf8'）
+ * `shell` 字符串 用来执行命令的shell（UNIX上默认是'/bin/sh'，Windows上默认是'cmd.exe'，该shell在UNIX上应当理解`-c`开关，在Windows上应该理解`/s /c`开关。在Windows上，命令行解析应当兼容`cmd.exe`。）
+ * `timeout` 数字 （默认值：0）
+ * `maxBuffer` 数字 （默认值：`200 * 1024`）
+ * `killSignal` 字符串 （默认值：'SIGTERM'）
+ * `uid` 数字 设置进程的用户身份
+ * `gid` 数字 设置进程的用户组身份
+* `callback` 函数 进程终止时随着输出被调用
+ * `error` 错误
+ * `stdout` Buffer
+ * `stderr` Buffer
+* 返回：子进程对象
+
+在一个shell中运行一个命令并缓冲输出。
+
+	var exec = require('child_process').exec,
+	    child;
+	
+	child = exec('cat *.js bad_file | wc -l',
+	  function (error, stdout, stderr) {
+	    console.log('stdout: ' + stdout);
+	    console.log('stderr: ' + stderr);
+	    if (error !== null) {
+	      console.log('exec error: ' + error);
+	    }
+	});
+
+回调函数获得参数`(error, stdout, stderr)`。命令执行成功时，`error`是`null`。出错时，`error`是`Error`的一个实例，`error.code`是子进程的退出代码，`error.signal`将会被设置为终止进程的信号。
+
+第二个参数用来指定几个选项。默认是
+
+	{ encoding: 'utf8',
+	  timeout: 0,
+	  maxBuffer: 200*1024,
+	  killSignal: 'SIGTERM',
+	  cwd: null,
+	  env: null }
+	  
+如果`timeout`大于0，那么当它运行时间超过`timeout`毫秒时这个子进程将会被杀死。子进程是被`killSignal`（默认是`'SIGTERM'`）杀死的。`maxBuffer`指定了stdout或者stderr允许的最大数据量。当超过这个值时子进程会被杀死。
+
+####child_process.execFile(file[, args][, options][, callback])
+* `file` 字符串 程序需要运行的文件名
+* `args` 数组 参数字符串列表
+* `options` 对象
+ * `cwd` 字符串 子进程当前工作目录
+ * `env` 对象 环境键值对
+ * `encoding` 字符串（默认值'utf8'）
+ * `timeout` 数字（默认0）
+ * `maxBuffer` 数字（默认值200 * 1024）
+ * `killSignal` 字符串（默认值'SIGTERM'）
+ * `uid` 数字 设置进程的用户身份
+ * `gid` 数字 设置进程的用户组身份
+* `callback` 函数 进程终止时随着输出被调用
+ * `error` 错误
+ * `stdout` Buffer
+ * `stderr` Buffer
+* 返回：子进程对象
+
+这和`child_process.exec()`类似，不过它不执行一个子shell而是直接执行指定的文件。因此它比`child_process.exec()`稍微精简一点。他们有着一样的选项。
+
+####child_process.fork(modulePath[, args][, options])
+* `modulePath` 字符串 需要在子进程中运行的模块
+* `args` 数组 参数字符串列表
+* `options` 对象
+ * `cwd` 字符串 子进程当前工作目录
+ * `env` 对象 环境键值对
+ * `execPath` 字符串 可执行文件，用于创建子进程的
+ * `execArgv` 数组 传递给可执行文件的参数字符串列表
+ * `silent` 布尔值 如果设置为true，子进程的stdin、stdout和stderr都会通过管道传给父进程，否则，他们将从父进程继承，更多细节请参考`spawn()`的`stdio`的'pipe'和'inherit'选项（默认是false）
+ * `uid` 数字 设置进程的用户身份。（参考setuid(2)）
+ * `gid` 数字 设置进程的用户组身份。（参考setgid(2)）
+* 返回：子进程对象
+
+这是`spawn()`的特例，专门用来生成Node进程。除了普通子进程实例的所有方法，所返回的对象还具有内建的通讯通道。更多细节参考`child.send(message, [sendHandle])`。
+
+这些子Node是全新的V8实例。假设每个新Node至少需要30ms的启动时间和10MB的内存，那么你并不能创建上千个这样的实例。
+
+`options`对象中的`execPath`属性可以用非当前Node可执行文件来创建子进程。这需要谨慎使用，而且默认会使用子进程上的`NODE_CHANNEL_FD`环境变量所指定的文件描述符来通讯。该文件描述符的输入和输出假定为以行分割的 JSON 对象。
+
+###同步创建进程
