@@ -472,3 +472,33 @@ ChildProcess类不能被直接使用。使用`spawn()`、`exec()`、`execFile()`
 `options`对象中的`execPath`属性可以用非当前Node可执行文件来创建子进程。这需要谨慎使用，而且默认会使用子进程上的`NODE_CHANNEL_FD`环境变量所指定的文件描述符来通讯。该文件描述符的输入和输出假定为以行分割的 JSON 对象。
 
 ###同步创建进程
+
+这些方法是同步的，意味着他们可能会阻塞事件轮询，中断执行你的代码，知道被生成的进程退出了。
+
+像这样的阻塞式调用对简化普通需求的编程任务和应用启动时配置的加载是非常有用的。
+
+####child_process.spawnSync(command[, args][, options])
+* `command` 字符串 需要运行的命令
+* `args` 数组 参数字符串列表
+* `options` 对象
+ * `cwd` 字符串 子进程的当前工作目录
+ * `input` 字符串|Buffer 作为stdin传递给被生成进程的值
+   * 使用这个值将会覆盖`stdio[0]`
+ * `stdio` 数组 子进程的stdio配置
+ * `env` 对象 环境键值对
+ * `uid` 数字 设置进程的用户身份（参考setuid(2)）
+ * `gid` 数字 设置进程的用户组身份（参考setgid(2)）
+ * `timeout` 数字 进程允许运行的最大毫秒数（默认值：undefined）
+ * `killSignal` 字符串 杀死进程时使用的信号（默认值：'SIGTERM'）
+ * `maxBuffer` 数字
+ * `encoding` 字符串 所有stdio输入输出的编码（默认值：'buffer'）
+* 返回：对象
+ * `pid` 数字 子进程的Pid
+ * `output` 数组 stdio输出结果的数组
+ * `stdout` Buffer|字符串 `output[1]`的内容
+ * `stderr` Buffer|字符串 `output[2]`的内容
+ * `status` 数字 子进程的退出代码
+ * `signal` 字符串 用来杀死子进程的信号
+ * `error` Error 子进程失败或者超时产生的Error对象
+ 
+在子进程完全关闭之前`spawnSync`不会返回。当超时并且发送了`killSignal`信号时，在进程完全退出前这个方法不会返回。也就是说，如果进程处理了`SIGTERM`信号并且没有退出，你的进程将一直等待直到子进程退出。
