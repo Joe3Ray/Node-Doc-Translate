@@ -502,3 +502,46 @@ ChildProcess类不能被直接使用。使用`spawn()`、`exec()`、`execFile()`
  * `error` Error 子进程失败或者超时产生的Error对象
  
 在子进程完全关闭之前`spawnSync`不会返回。当超时并且发送了`killSignal`信号时，在进程完全退出前这个方法不会返回。也就是说，如果进程处理了`SIGTERM`信号并且没有退出，你的进程将一直等待直到子进程退出。
+
+####child_process.execFileSync(command[, args][, options])
+* `command` 字符串 需要运行的命令
+* `args` 数组 参数字符串列表
+* `options` 对象
+ * `cwd` 字符串 子进程的当前工作目录
+ * `input` 字符串|Buffer 作为stdin传递给被生成进程的值
+   * 使用这个值将会覆盖`stdio[0]`
+ * `stdio` 数组 子进程的stdio配置（默认值：'pipe'）
+   * 除非指定了`stdio`，否则默认会把`stderr`输出到父进程的stderr
+ * `env` 对象 环境键值对
+ * `uid` 数字 设置进程的用户身份（参考setuid(2)）
+ * `gid` 数字 设置进程的用户组身份（参考setgid(2)）
+ * `timeout` 数字 进程允许运行的最大毫秒数（默认值：undefined）
+ * `killSignal` 字符串 杀死进程时使用的信号（默认值：'SIGTERM'）
+ * `maxBuffer` 数字
+ * `encoding` 字符串 所有stdio输入输出的编码（默认值：'buffer'）
+* 返回：Buffer|字符串 该命令的stdout
+
+在子进程完全关闭之前`execFileSync`不会返回。当超时并且发送了`killSignal`信号时，在进程完全退出前这个方法不会返回。也就是说，如果进程处理了`SIGTERM`信号并且没有退出，你的进程将一直等待直到子进程退出。
+
+如果该进程超时或者退出代码不是0，这个方法会抛出错误。`Error`对象会包括`child_process.spawnSync`的整个结果。
+
+####child_process.execSync(command[, options])
+* `command` 字符串 需要运行的命令
+* `options` 对象
+ * `cwd` 字符串 子进程的当前工作目录
+ * `input` 字符串|Buffer 作为stdin传递给被生成进程的值
+   * 使用这个值将会覆盖`stdio[0]`
+ * `stdio` 数组 子进程的stdio配置（默认值：'pipe'）
+   * 除非指定了`stdio`，否则默认会把`stderr`输出到父进程的stderr
+ * `env` 对象 环境键值对
+ * `uid` 数字 设置进程的用户身份（参考setuid(2)）
+ * `gid` 数字 设置进程的用户组身份（参考setgid(2)）
+ * `timeout` 数字 进程允许运行的最大毫秒数（默认值：undefined）
+ * `killSignal` 字符串 杀死进程时使用的信号（默认值：'SIGTERM'）
+ * `maxBuffer` 数字
+ * `encoding` 字符串 所有stdio输入输出的编码（默认值：'buffer'）
+* 返回：Buffer|字符串 该命令的stdout
+
+在子进程完全关闭之前`execSync`不会返回。当超时并且发送了`killSignal`信号时，在进程完全退出前这个方法不会返回。也就是说，如果进程处理了`SIGTERM`信号并且没有退出，你的进程将一直等待直到子进程退出。
+
+如果该进程超时或者退出代码不是0，这个方法会抛出错误。`Error`对象会包括`child_process.spawnSync`的整个结果。
